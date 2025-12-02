@@ -27,7 +27,6 @@ export default function OussamaAIAgent() {
     scrollToBottom();
   }, [messages]);
 
-  // Text-to-speech effect
   useEffect(() => {
     if (voiceEnabled && messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
@@ -109,7 +108,6 @@ export default function OussamaAIAgent() {
       <div className="container mx-auto px-6 py-8 max-w-7xl relative">
         <div className="grid lg:grid-cols-3 gap-8">
 
-          {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
@@ -145,7 +143,6 @@ export default function OussamaAIAgent() {
             </div>
           </div>
 
-          {/* Chat Window */}
           <div className="lg:col-span-2">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 flex flex-col h-[600px]">
 
