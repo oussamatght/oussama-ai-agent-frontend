@@ -27,15 +27,48 @@ export default function OussamaAIAgent() {
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
-    if (voiceEnabled && messages.length > 0) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg.role === 'assistant') {
-        const utterance = new SpeechSynthesisUtterance(lastMsg.content);
-        speechSynthesis.speak(utterance);
+ useEffect(() => {
+  if (voiceEnabled && messages.length > 0) {
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.role === 'assistant') {
+      const utterance = new SpeechSynthesisUtterance(lastMsg.content);
+
+      // Detect Arabic characters
+      const arabicRegex = /[\u0600-\u06FF]/;
+      const lang = arabicRegex.test(lastMsg.content) ? 'ar-SA' : 'en-US';
+      utterance.lang = lang;
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+
+      const setVoice = () => {
+        const voices = speechSynthesis.getVoices();
+        let chosenVoice;
+
+        // Try to find male voice first
+        chosenVoice = voices.find(v => v.lang === lang && /male|mark|david|albert/i.test(v.name));
+
+        // If no male voice found, fallback to any voice for that language
+        if (!chosenVoice) {
+          chosenVoice = voices.find(v => v.lang === lang);
+        }
+
+        if (chosenVoice) utterance.voice = chosenVoice;
+
+        // Speak
+        window.speechSynthesis.cancel(); 
+        window.speechSynthesis.speak(utterance);
+      };
+
+      if (speechSynthesis.getVoices().length === 0) {
+        speechSynthesis.onvoiceschanged = setVoice;
+      } else {
+        setVoice();
       }
     }
-  }, [messages, voiceEnabled]);
+  }
+}, [messages, voiceEnabled]);
+
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -48,9 +81,7 @@ export default function OussamaAIAgent() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3020'}/api/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: input, sessionId }),
       });
 
@@ -88,6 +119,7 @@ export default function OussamaAIAgent() {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
+      {/* Header */}
       <header className="relative border-b border-white/10 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -99,15 +131,17 @@ export default function OussamaAIAgent() {
               <p className="text-xs text-gray-400">Powered by GPT-4</p>
             </div>
           </div>
-          <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" title='k'>
+          <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Settings">
             <Settings className="w-5 h-5" />
           </button>
         </div>
       </header>
 
+      {/* Main */}
       <div className="container mx-auto px-6 py-8 max-w-7xl relative">
         <div className="grid lg:grid-cols-3 gap-8">
 
+          {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
@@ -120,7 +154,7 @@ export default function OussamaAIAgent() {
               <div className="space-y-4">
                 <FeatureCard icon={<Brain className="w-5 h-5" />} title="Memory" description="Remembers past conversations and preferences" />
                 <FeatureCard icon={<MessageSquare className="w-5 h-5" />} title="Personality" description="Mimics Oussama's communication style" />
-                <FeatureCard icon={<Mic className="w-5 h-5" />} title="Voice Clone" description="Optional text-to-speech with Oussama's voice" />
+                <FeatureCard icon={<Mic className="w-5 h-5" />} title="Voice Clone" description="AI speaks in Oussama's male voice" />
                 <FeatureCard icon={<Zap className="w-5 h-5" />} title="Task Execution" description="Can search, schedule, and assist with tasks" />
               </div>
             </div>
@@ -132,9 +166,9 @@ export default function OussamaAIAgent() {
                   <span className="font-medium">Voice Responses</span>
                 </div>
                 <button
-                  title='s'
                   onClick={() => setVoiceEnabled(!voiceEnabled)}
                   className={`relative w-12 h-6 rounded-full transition-colors ${voiceEnabled ? 'bg-purple-500' : 'bg-gray-600'}`}
+                  title="Toggle Voice"
                 >
                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${voiceEnabled ? 'translate-x-7' : 'translate-x-1'}`}></div>
                 </button>
@@ -143,19 +177,20 @@ export default function OussamaAIAgent() {
             </div>
           </div>
 
+          {/* Chat Window */}
           <div className="lg:col-span-2">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 flex flex-col h-[600px]">
 
-              <div className="p-6 border-b border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center font-bold text-lg">O</div>
-                  <div>
-                    <h3 className="font-semibold">Oussamas Agent</h3>
-                    <p className="text-sm text-gray-400">Online • Ready to chat</p>
-                  </div>
+              {/* Chat Header */}
+              <div className="p-6 border-b border-white/10 flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center font-bold text-lg">O</div>
+                <div>
+                  <h3 className="font-semibold">Oussamas Agent</h3>
+                  <p className="text-sm text-gray-400">Online • Ready to chat</p>
                 </div>
               </div>
 
+              {/* Messages */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {messages.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -180,25 +215,24 @@ export default function OussamaAIAgent() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className="p-6 border-t border-white/10">
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={handleInputChange}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type your message..."
-                    className="flex-1 bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                  />
-                  <button
-                    title='just send it'
-                    onClick={handleSend}
-                    disabled={!input.trim()}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 p-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Send className="w-5 h-5" />
-                  </button>
-                </div>
+              {/* Input */}
+              <div className="p-6 border-t border-white/10 flex gap-3">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={handleInputChange}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type your message..."
+                  className="flex-1 bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                  className="bg-gradient-to-r from-purple-500 to-blue-500 p-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Send Message"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
               </div>
 
             </div>
@@ -207,6 +241,7 @@ export default function OussamaAIAgent() {
         </div>
       </div>
 
+      {/* Footer */}
       <footer className="relative border-t border-white/10 backdrop-blur-sm mt-16">
         <div className="container mx-auto px-6 py-8 text-center text-gray-400">
           <p className="text-sm mt-2">Version 1.0 • 2025</p>
