@@ -15,6 +15,8 @@ export default function OussamaAIAgent() {
   const [input, setInput] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToBottom = () => {
@@ -25,6 +27,17 @@ export default function OussamaAIAgent() {
     scrollToBottom();
   }, [messages]);
 
+  // Text-to-speech effect
+  useEffect(() => {
+    if (voiceEnabled && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.role === 'assistant') {
+        const utterance = new SpeechSynthesisUtterance(lastMsg.content);
+        speechSynthesis.speak(utterance);
+      }
+    }
+  }, [messages, voiceEnabled]);
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -33,21 +46,29 @@ export default function OussamaAIAgent() {
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const responses = [
-        "Let's see... that's a cool question! Here's what I think:",
-        "All good! So basically what you're asking is...",
-        "Yo, interesting point! From my perspective:",
-        "Nice one! Here's the deal:"
-      ];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3020'}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: input, sessionId }),
+      });
 
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `${randomResponse} [This is a demo - connect to your backend API to get real responses from the GPT-4 powered agent with Oussama's personality]`
-      }]);
+      const data = await res.json();
+
+      if (data.success) {
+        setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+        setSessionId(data.sessionId);
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${data.error}` }]);
+      }
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Server error, try again later." }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -79,19 +100,16 @@ export default function OussamaAIAgent() {
               <p className="text-xs text-gray-400">Powered by GPT-4</p>
             </div>
           </div>
-        <button 
-  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-  title='k'
->
-  <Settings className="w-5 h-5" />
-</button>
-
+          <button className="p-2 hover:bg-white/10 rounded-lg transition-colors" title='k'>
+            <Settings className="w-5 h-5" />
+          </button>
         </div>
       </header>
 
       <div className="container mx-auto px-6 py-8 max-w-7xl relative">
         <div className="grid lg:grid-cols-3 gap-8">
 
+          {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
@@ -102,26 +120,10 @@ export default function OussamaAIAgent() {
               </p>
 
               <div className="space-y-4">
-                <FeatureCard
-                  icon={<Brain className="w-5 h-5" />}
-                  title="Memory"
-                  description="Remembers past conversations and preferences"
-                />
-                <FeatureCard
-                  icon={<MessageSquare className="w-5 h-5" />}
-                  title="Personality"
-                  description="Mimics Oussama's communication style"
-                />
-                <FeatureCard
-                  icon={<Mic className="w-5 h-5" />}
-                  title="Voice Clone"
-                  description="Optional text-to-speech with Oussama's voice"
-                />
-                <FeatureCard
-                  icon={<Zap className="w-5 h-5" />}
-                  title="Task Execution"
-                  description="Can search, schedule, and assist with tasks"
-                />
+                <FeatureCard icon={<Brain className="w-5 h-5" />} title="Memory" description="Remembers past conversations and preferences" />
+                <FeatureCard icon={<MessageSquare className="w-5 h-5" />} title="Personality" description="Mimics Oussama's communication style" />
+                <FeatureCard icon={<Mic className="w-5 h-5" />} title="Voice Clone" description="Optional text-to-speech with Oussama's voice" />
+                <FeatureCard icon={<Zap className="w-5 h-5" />} title="Task Execution" description="Can search, schedule, and assist with tasks" />
               </div>
             </div>
 
@@ -132,27 +134,24 @@ export default function OussamaAIAgent() {
                   <span className="font-medium">Voice Responses</span>
                 </div>
                 <button
-                title='s'
+                  title='s'
                   onClick={() => setVoiceEnabled(!voiceEnabled)}
                   className={`relative w-12 h-6 rounded-full transition-colors ${voiceEnabled ? 'bg-purple-500' : 'bg-gray-600'}`}
                 >
                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${voiceEnabled ? 'translate-x-7' : 'translate-x-1'}`}></div>
                 </button>
               </div>
-              <p className="text-sm text-gray-400">
-                {voiceEnabled ? 'Voice synthesis enabled' : 'Text-only mode'}
-              </p>
+              <p className="text-sm text-gray-400">{voiceEnabled ? 'Voice synthesis enabled' : 'Text-only mode'}</p>
             </div>
           </div>
 
+          {/* Chat Window */}
           <div className="lg:col-span-2">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 flex flex-col h-[600px]">
 
               <div className="p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center font-bold text-lg">
-                    O
-                  </div>
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center font-bold text-lg">O</div>
                   <div>
                     <h3 className="font-semibold">Oussamas Agent</h3>
                     <p className="text-sm text-gray-400">Online • Ready to chat</p>
@@ -163,11 +162,7 @@ export default function OussamaAIAgent() {
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {messages.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                      msg.role === 'user'
-                        ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
-                        : 'bg-white/10 text-gray-100'
-                    }`}>
+                    <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.role === 'user' ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white' : 'bg-white/10 text-gray-100'}`}>
                       <p className="text-sm leading-relaxed">{msg.content}</p>
                     </div>
                   </div>
@@ -198,20 +193,20 @@ export default function OussamaAIAgent() {
                     placeholder="Type your message..."
                     className="flex-1 bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                   />
-             <button
-             title='just send it'
-  onClick={handleSend}
-  disabled={!input.trim()}
-  className="bg-gradient-to-r from-purple-500 to-blue-500 p-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
->
-  <Send className="w-5 h-5" />
-</button>
-
+                  <button
+                    title='just send it'
+                    onClick={handleSend}
+                    disabled={!input.trim()}
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 p-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
                 </div>
-               
               </div>
+
             </div>
           </div>
+
         </div>
       </div>
 
