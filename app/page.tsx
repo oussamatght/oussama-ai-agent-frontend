@@ -33,7 +33,7 @@ export default function OussamaAIAgent() {
     if (lastMsg.role === 'assistant') {
       const utterance = new SpeechSynthesisUtterance(lastMsg.content);
 
-      // Detect Arabic characters
+    
       const arabicRegex = /[\u0600-\u06FF]/;
       const lang = arabicRegex.test(lastMsg.content) ? 'ar-SA' : 'en-US';
       utterance.lang = lang;
@@ -45,7 +45,7 @@ export default function OussamaAIAgent() {
         const voices = speechSynthesis.getVoices();
         let chosenVoice;
 
-        // Try to find male voice first
+      
         chosenVoice = voices.find(v => v.lang === lang && /male|mark|david|albert/i.test(v.name));
 
         // If no male voice found, fallback to any voice for that language
@@ -55,7 +55,7 @@ export default function OussamaAIAgent() {
 
         if (chosenVoice) utterance.voice = chosenVoice;
 
-        // Speak
+      
         window.speechSynthesis.cancel(); 
         window.speechSynthesis.speak(utterance);
       };
@@ -79,7 +79,7 @@ export default function OussamaAIAgent() {
     setIsTyping(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3020'}/api/chat`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://oussama-ai-agent-backend-1.onrender.com'}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: input, sessionId }),
@@ -119,7 +119,6 @@ export default function OussamaAIAgent() {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
-      {/* Header */}
       <header className="relative border-b border-white/10 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -137,11 +136,9 @@ export default function OussamaAIAgent() {
         </div>
       </header>
 
-      {/* Main */}
       <div className="container mx-auto px-6 py-8 max-w-7xl relative">
         <div className="grid lg:grid-cols-3 gap-8">
 
-          {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
@@ -177,11 +174,9 @@ export default function OussamaAIAgent() {
             </div>
           </div>
 
-          {/* Chat Window */}
           <div className="lg:col-span-2">
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 flex flex-col h-[600px]">
 
-              {/* Chat Header */}
               <div className="p-6 border-b border-white/10 flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center font-bold text-lg">O</div>
                 <div>
@@ -190,7 +185,6 @@ export default function OussamaAIAgent() {
                 </div>
               </div>
 
-              {/* Messages */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {messages.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -215,7 +209,6 @@ export default function OussamaAIAgent() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input */}
               <div className="p-6 border-t border-white/10 flex gap-3">
                 <input
                   type="text"
@@ -241,7 +234,6 @@ export default function OussamaAIAgent() {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="relative border-t border-white/10 backdrop-blur-sm mt-16">
         <div className="container mx-auto px-6 py-8 text-center text-gray-400">
           <p className="text-sm mt-2">Version 1.0 • 2025</p>
