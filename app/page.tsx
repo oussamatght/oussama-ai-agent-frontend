@@ -65,7 +65,7 @@ export default function OussamaAIAgent() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'https://oussama-ai-agent-backend-1.onrender.com'}/api/chat`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'https://oussama-ai-agent-backend-3.onrender.com/api/chat'}/api/chat`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
