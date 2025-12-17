@@ -64,8 +64,7 @@ export default function OussamaAIAgent() {
     setIsTyping(true);
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'https://oussama-ai-agent-backend-1.onrender.com'}/api/chat` ,
+      const res = await fetch(`https://oussama-ai-agent-backend.vercel.app/api/chat` ,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
